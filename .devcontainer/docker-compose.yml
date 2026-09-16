@@ -1,0 +1,24 @@
+version: "3.8"
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/python:3.11
+    volumes:
+      - ../..:/workspace:cached
+    command: sleep infinity
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/supplier_cash_flow
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: supplier_cash_flow
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
