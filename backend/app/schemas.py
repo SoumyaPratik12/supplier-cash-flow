@@ -41,12 +41,17 @@ class RiskDriver(BaseModel):
     impact: float
     direction: str
 
+class DependencyBreakdown(BaseModel):
+    weight: float
+    level: str
+    replaceability: str
 
 class RiskBreakdown(BaseModel):
     risk_level: str
     score: float
     top_factors: List[str]
     risk_drivers: List[RiskDriver]
+    dependency: DependencyBreakdown
     forecast_next_period: float
     recommended_action: str
 

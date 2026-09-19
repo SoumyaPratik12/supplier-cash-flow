@@ -98,3 +98,24 @@ main {
   margin: 4px 0 0 0;
   padding-left: 18px;
 }
+
+.dependency-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #ddd;
+}
+
+.dependency-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.dependency-level {
+  font-weight: 600;
+}
+
+.dependency-section p {
+  margin: 0;
+}

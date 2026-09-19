@@ -29,8 +29,7 @@ export default function SupplierDetail({ supplier }) {
     <div className="supplier-detail">
       <h2>{supplier.name}</h2>
       <p className="hint">
-        {supplier.industry} · Order volume ${supplier.order_volume.toLocaleString()} · Dependency weight{" "}
-        {supplier.dependency_weight}
+        {supplier.industry} · Order volume ${supplier.order_volume.toLocaleString()}
       </p>
 
       {supplier.risk && (
@@ -49,6 +48,23 @@ export default function SupplierDetail({ supplier }) {
               ))}
             </ul>
           </div>
+          {supplier.risk?.dependency && (
+            <div className="dependency-section">
+              <h3>Supplier dependency</h3>
+
+              <div className="dependency-summary">
+                <span className="dependency-level">
+                  {supplier.risk.dependency.level}
+                </span>
+
+                <span>
+                  {(supplier.risk.dependency.weight * 100).toFixed(0)}% dependency weight
+                </span>
+              </div>
+
+              <p>{supplier.risk.dependency.replaceability}</p>
+            </div>
+          )}
         </div>
       )}
 

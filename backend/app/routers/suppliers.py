@@ -13,6 +13,7 @@ from app.schemas import (
     SupplierListItem,
     SupplierProfile,
 )
+from app.services.dependency import dependency_breakdown
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
@@ -67,6 +68,7 @@ def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
             score=risk.score,
             top_factors=risk.top_factors.split(","),
             risk_drivers=json.loads(risk.risk_drivers),
+            dependency=dependency_breakdown(s.dependency_weight),
             forecast_next_period=risk.forecast_next_period,
             recommended_action=risk.recommended_action.value,
         )
@@ -114,6 +116,10 @@ def get_forecast(supplier_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{supplier_id}/risk-breakdown", response_model=RiskBreakdown)
 def get_risk_breakdown(supplier_id: int, db: Session = Depends(get_db)):
+    supplier = db.get(Supplier, supplier_id)
+    if supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
     risk = _latest_risk(db, supplier_id)
     if not risk:
         raise HTTPException(status_code=404, detail="No risk score for this supplier")
@@ -123,6 +129,7 @@ def get_risk_breakdown(supplier_id: int, db: Session = Depends(get_db)):
         score=risk.score,
         top_factors=risk.top_factors.split(","),
         risk_drivers=json.loads(risk.risk_drivers),
+        dependency=dependency_breakdown(supplier.dependency_weight),
         forecast_next_period=risk.forecast_next_period,
         recommended_action=risk.recommended_action.value,
     )
