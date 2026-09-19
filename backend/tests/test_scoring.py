@@ -5,6 +5,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.services.data_generator import generate_suppliers
 from app.services.forecasting import forecast_next_period, revenue_slope
+from app.services.risk_explanation import explain_risk
 from app.services.scoring import (
     extract_features,
     recommended_action,
@@ -78,3 +79,149 @@ def test_model_recovers_signal_on_synthetic_labels():
     model = train_risk_model(feature_rows, labels)
     assert model.cv_precision > 0.5
     assert model.cv_recall > 0.5
+
+
+def test_explain_risk_returns_structured_driver_details():
+    suppliers, invoices, snapshots = generate_suppliers(n_suppliers=30, seed=11)
+    inv_by_supplier, rev_by_supplier = {}, {}
+    for inv in invoices:
+        inv_by_supplier.setdefault(inv["supplier_id"], []).append(inv)
+    for snap in snapshots:
+        rev_by_supplier.setdefault(snap["supplier_id"], []).append(snap["revenue"])
+
+    feature_rows = [extract_features(inv_by_supplier[s["id"]], rev_by_supplier[s["id"]]) for s in suppliers]
+    labels = [s["_ground_truth_label"] for s in suppliers]
+    model = train_risk_model(feature_rows, labels)
+
+    supplier_features = feature_rows[0]
+    drivers = explain_risk(model, supplier_features, top_n=3)
+
+    assert len(drivers) > 0
+    assert len(drivers) <= 3
+    for driver in drivers:
+        assert {"factor", "label", "value", "impact", "direction"}.issubset(driver.keys())
+        assert driver["factor"] in supplier_features
+        assert isinstance(driver["value"], (int, float))
+        assert isinstance(driver["impact"], (int, float))
+        assert driver["direction"] in {"positive", "negative", "neutral"}
+
+
+def test_risk_explanation_returns_ranked_drivers():
+    suppliers, invoices, snapshots = generate_suppliers(n_suppliers=40, seed=42)
+
+    inv_by_supplier, rev_by_supplier = {}, {}
+
+    for inv in invoices:
+        inv_by_supplier.setdefault(inv["supplier_id"], []).append(inv)
+
+    for snap in snapshots:
+        rev_by_supplier.setdefault(snap["supplier_id"], []).append(snap["revenue"])
+
+    feature_rows = [
+        extract_features(
+            inv_by_supplier[s["id"]],
+            rev_by_supplier[s["id"]],
+        )
+        for s in suppliers
+    ]
+
+    labels = [s["_ground_truth_label"] for s in suppliers]
+
+    model = train_risk_model(feature_rows, labels)
+
+    drivers = explain_risk(model, feature_rows[0])
+
+    assert len(drivers) == 3
+    assert all("factor" in driver for driver in drivers)
+    assert all("label" in driver for driver in drivers)
+    assert all("value" in driver for driver in drivers)
+    assert all("impact" in driver for driver in drivers)
+    assert all("direction" in driver for driver in drivers)
+
+    impacts = [driver["impact"] for driver in drivers]
+
+    assert impacts == sorted(impacts, reverse=True)
+    assert all(0.0 <= impact <= 1.0 for impact in impacts)
+
+
+def test_risk_explanation_direction_changes_with_feature_deviation():
+    suppliers, invoices, snapshots = generate_suppliers(n_suppliers=40, seed=42)
+
+    inv_by_supplier, rev_by_supplier = {}, {}
+
+    for inv in invoices:
+        inv_by_supplier.setdefault(inv["supplier_id"], []).append(inv)
+
+    for snap in snapshots:
+        rev_by_supplier.setdefault(snap["supplier_id"], []).append(snap["revenue"])
+
+    feature_rows = [
+        extract_features(
+            inv_by_supplier[s["id"]],
+            rev_by_supplier[s["id"]],
+        )
+        for s in suppliers
+    ]
+
+    labels = [s["_ground_truth_label"] for s in suppliers]
+
+    model = train_risk_model(feature_rows, labels)
+
+    features = feature_rows[0].copy()
+
+    features["avg_days_to_payment"] = (
+        model.feature_means[1] + 3 * model.feature_stds[1]
+    )
+
+    drivers = explain_risk(model, features)
+
+    payment_driver = next(
+        driver
+        for driver in drivers
+        if driver["factor"] == "avg_days_to_payment"
+    )
+
+    assert payment_driver["direction"] == "negative"
+
+
+def test_risk_explanation_handles_population_baseline():
+    suppliers, invoices, snapshots = generate_suppliers(n_suppliers=40, seed=42)
+
+    inv_by_supplier, rev_by_supplier = {}, {}
+
+    for inv in invoices:
+        inv_by_supplier.setdefault(inv["supplier_id"], []).append(inv)
+
+    for snap in snapshots:
+        rev_by_supplier.setdefault(snap["supplier_id"], []).append(snap["revenue"])
+
+    feature_rows = [
+        extract_features(
+            inv_by_supplier[s["id"]],
+            rev_by_supplier[s["id"]],
+        )
+        for s in suppliers
+    ]
+
+    labels = [s["_ground_truth_label"] for s in suppliers]
+
+    model = train_risk_model(feature_rows, labels)
+
+    baseline_features = {
+        factor: float(model.feature_means[index])
+        for index, factor in enumerate(
+            [
+                "revenue_slope",
+                "avg_days_to_payment",
+                "days_to_payment_trend",
+                "outstanding_ratio",
+                "overdue_ratio",
+                "on_time_rate",
+            ]
+        )
+    }
+
+    drivers = explain_risk(model, baseline_features)
+
+    assert len(drivers) == 3
+    assert all(driver["impact"] == 0.0 for driver in drivers)

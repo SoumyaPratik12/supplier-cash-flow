@@ -1,3 +1,5 @@
+import json
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -64,6 +66,7 @@ def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
             risk_level=risk.risk_level.value,
             score=risk.score,
             top_factors=risk.top_factors.split(","),
+            risk_drivers=json.loads(risk.risk_drivers),
             forecast_next_period=risk.forecast_next_period,
             recommended_action=risk.recommended_action.value,
         )
@@ -119,6 +122,7 @@ def get_risk_breakdown(supplier_id: int, db: Session = Depends(get_db)):
         risk_level=risk.risk_level.value,
         score=risk.score,
         top_factors=risk.top_factors.split(","),
+        risk_drivers=json.loads(risk.risk_drivers),
         forecast_next_period=risk.forecast_next_period,
         recommended_action=risk.recommended_action.value,
     )

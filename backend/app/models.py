@@ -8,6 +8,7 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
+    Text,
 )
 from sqlalchemy.orm import relationship
 
@@ -85,6 +86,7 @@ class RiskScore(Base):
     risk_level = Column(Enum(RiskLevel), nullable=False)
     score = Column(Float, nullable=False)  # 0-1 probability of cash-flow shortfall
     top_factors = Column(String, nullable=False)  # comma-separated, ranked
+    risk_drivers = Column(Text, nullable=False, default="[]")  # JSON-encoded structured drivers
     forecast_next_period = Column(Float, nullable=False)
     recommended_action = Column(Enum(RecommendedAction), nullable=False)
     ground_truth_label = Column(Integer, nullable=True)  # only set for synthetic labeled subset

@@ -34,10 +34,19 @@ class SupplierListItem(BaseModel):
     recommended_action: str
 
 
+class RiskDriver(BaseModel):
+    factor: str
+    label: str
+    value: float
+    impact: float
+    direction: str
+
+
 class RiskBreakdown(BaseModel):
     risk_level: str
     score: float
     top_factors: List[str]
+    risk_drivers: List[RiskDriver]
     forecast_next_period: float
     recommended_action: str
 

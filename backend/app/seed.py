@@ -5,10 +5,13 @@ synthetic ground truth, and persists risk scores + forecasts per supplier.
 This mirrors the "offline batch job" design from the kickoff doc — scoring
 is not computed live per request."""
 
+import json
+
 from app.database import Base, SessionLocal, engine
 from app.models import Invoice, RevenueSnapshot, RiskScore, Supplier
 from app.services.data_generator import generate_suppliers
 from app.services.forecasting import forecast_next_period
+from app.services.risk_explanation import explain_risk
 from app.services.scoring import (
     extract_features,
     recommended_action,
@@ -63,6 +66,7 @@ def seed(n_suppliers: int = 50, seed_value: int = 42):
 
         for s, feats in zip(suppliers, feature_rows):
             score, top_factors = score_supplier(model, feats)
+            risk_drivers = explain_risk(model, feats)
             level = risk_level_from_score(score)
             action = recommended_action(level, s["dependency_weight"])
             rev_series = revenue_by_supplier[s["id"]]
@@ -74,6 +78,7 @@ def seed(n_suppliers: int = 50, seed_value: int = 42):
                     risk_level=level,
                     score=score,
                     top_factors=",".join(top_factors),
+                    risk_drivers=json.dumps(risk_drivers),
                     forecast_next_period=forecast_next_period(rev_series),
                     recommended_action=action,
                     ground_truth_label=s["_ground_truth_label"],
