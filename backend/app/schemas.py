@@ -46,6 +46,13 @@ class DependencyBreakdown(BaseModel):
     level: str
     replaceability: str
 
+
+class InterventionDecision(BaseModel):
+    action: str
+    priority: str
+    reason: str
+
+
 class RiskBreakdown(BaseModel):
     risk_level: str
     score: float
@@ -54,6 +61,7 @@ class RiskBreakdown(BaseModel):
     dependency: DependencyBreakdown
     forecast_next_period: float
     recommended_action: str
+    intervention: InterventionDecision
 
 
 class SupplierProfile(BaseModel):

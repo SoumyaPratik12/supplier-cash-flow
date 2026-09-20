@@ -119,3 +119,37 @@ main {
 .dependency-section p {
   margin: 0;
 }
+
+.intervention-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.intervention-details {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.intervention-details > div {
+  display: grid;
+  gap: 3px;
+}
+
+.intervention-details span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.65;
+}
+
+.intervention-details strong {
+  font-weight: 600;
+}
+
+.intervention-details p {
+  margin: 0;
+  line-height: 1.5;
+}

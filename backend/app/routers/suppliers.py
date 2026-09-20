@@ -8,12 +8,14 @@ from app.models import Invoice, RevenueSnapshot, RiskScore, Supplier
 from app.schemas import (
     ForecastOut,
     InvoiceOut,
+    InterventionDecision,
     RevenueSnapshotOut,
     RiskBreakdown,
     SupplierListItem,
     SupplierProfile,
 )
 from app.services.dependency import dependency_breakdown
+from app.services.intervention import intervention_for
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
@@ -71,6 +73,12 @@ def get_supplier(supplier_id: int, db: Session = Depends(get_db)):
             dependency=dependency_breakdown(s.dependency_weight),
             forecast_next_period=risk.forecast_next_period,
             recommended_action=risk.recommended_action.value,
+            intervention=InterventionDecision(
+                **intervention_for(
+                    risk.risk_level.value,
+                    s.dependency_weight,
+                )
+            ),
         )
 
     invoices = db.query(Invoice).filter(Invoice.supplier_id == supplier_id).order_by(Invoice.issue_date).all()
@@ -132,4 +140,10 @@ def get_risk_breakdown(supplier_id: int, db: Session = Depends(get_db)):
         dependency=dependency_breakdown(supplier.dependency_weight),
         forecast_next_period=risk.forecast_next_period,
         recommended_action=risk.recommended_action.value,
+        intervention=InterventionDecision(
+            **intervention_for(
+                risk.risk_level.value,
+                supplier.dependency_weight,
+            )
+        ),
     )

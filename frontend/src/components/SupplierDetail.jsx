@@ -40,6 +40,30 @@ export default function SupplierDetail({ supplier }) {
           <div>
             <strong>Recommended action:</strong> {supplier.risk.recommended_action}
           </div>
+
+          {supplier.risk.intervention && (
+            <div className="intervention-section">
+              <strong>Intervention:</strong>
+
+              <div className="intervention-details">
+                <div>
+                  <span>Action</span>
+                  <strong>{supplier.risk.intervention.action}</strong>
+                </div>
+
+                <div>
+                  <span>Priority</span>
+                  <strong>{supplier.risk.intervention.priority}</strong>
+                </div>
+
+                <div>
+                  <span>Reason</span>
+                  <p>{supplier.risk.intervention.reason}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <strong>Why:</strong>
             <ul>
