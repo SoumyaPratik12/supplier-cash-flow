@@ -34,7 +34,12 @@ export default function SupplierDetail({ supplier }) {
   }, [supplier]);
 
   if (!supplier) {
-    return <div className="supplier-detail empty">Select a supplier to see the detail view.</div>;
+    return (
+      <div className="supplier-detail empty">
+        Select a supplier from the attention queue to inspect its financial risk
+        and intervention options.
+      </div>
+    );
   }
 
   const currentDependency = supplier.risk?.dependency?.weight ?? supplier.dependency_weight;
@@ -122,23 +127,101 @@ export default function SupplierDetail({ supplier }) {
 
   return (
     <div className="supplier-detail">
-      <h2>{supplier.name}</h2>
-      <p className="hint">
-        {supplier.industry} · Order volume ${supplier.order_volume.toLocaleString()}
-      </p>
+      <div className="supplier-identity">
+        <div>
+          <p className="eyebrow">Supplier financial profile</p>
+          <h2>{supplier.name}</h2>
+          <p className="hint">
+            {supplier.industry} · Order volume $
+            {supplier.order_volume.toLocaleString()}
+          </p>
+        </div>
+      </div>
 
       {supplier.risk && (
-        <div className="risk-panel">
-          <div>
-            <strong>Risk level:</strong> {supplier.risk.risk_level} (score {supplier.risk.score})
-          </div>
-          <div>
-            <strong>Recommended action:</strong> {supplier.risk.recommended_action}
-          </div>
+        <>
+          <section className="risk-panel decision-section">
+            <div className="decision-section-heading">
+              <div>
+                <p className="eyebrow">01 · Financial risk</p>
+                <h3>Current risk assessment</h3>
+              </div>
+
+              <div className="risk-summary-badge">
+                <span>{supplier.risk.risk_level}</span>
+                <strong>{(supplier.risk.score * 100).toFixed(0)}%</strong>
+              </div>
+            </div>
+
+            <div className="risk-assessment-grid">
+              <div className="risk-assessment-card">
+                <span>Risk level</span>
+                <strong>{supplier.risk.risk_level}</strong>
+              </div>
+
+              <div className="risk-assessment-card">
+                <span>Risk score</span>
+                <strong>{(supplier.risk.score * 100).toFixed(0)}%</strong>
+              </div>
+            </div>
+
+            <div className="risk-drivers">
+              <div className="decision-subheading">
+                <span className="eyebrow">Why</span>
+                <h4>Key risk drivers</h4>
+              </div>
+
+              <ul>
+                {supplier.risk.top_factors.map((factor) => (
+                  <li key={factor}>{FACTOR_LABELS[factor] || factor}</li>
+                ))}
+              </ul>
+            </div>
+          </section>
+
+          {supplier.risk?.dependency && (
+            <section className="dependency-section decision-section">
+              <div className="decision-section-heading">
+                <div>
+                  <p className="eyebrow">02 · Supplier dependency</p>
+                  <h3>How difficult is this supplier to replace?</h3>
+                </div>
+
+                <span className="dependency-level">
+                  {supplier.risk.dependency.level}
+                </span>
+              </div>
+
+              <div className="dependency-summary">
+                <div>
+                  <span>Dependency weight</span>
+                  <strong>
+                    {(supplier.risk.dependency.weight * 100).toFixed(0)}%
+                  </strong>
+                </div>
+
+                <div>
+                  <span>Replaceability</span>
+                  <strong>{supplier.risk.dependency.replaceability}</strong>
+                </div>
+              </div>
+            </section>
+          )}
 
           {supplier.risk.intervention && (
-            <div className="intervention-section">
-              <strong>Intervention:</strong>
+            <section className="intervention-section decision-section">
+              <div className="decision-section-heading">
+                <div>
+                  <p className="eyebrow">03 · Recommended intervention</p>
+                  <h3>Action currently suggested by the model</h3>
+                </div>
+
+                <span
+                  className={`intervention-priority intervention-priority-${supplier.risk.intervention.priority.toLowerCase()}`}
+                >
+                  {supplier.risk.intervention.priority} priority
+                </span>
+              </div>
 
               <div className="intervention-details">
                 <div>
@@ -147,52 +230,38 @@ export default function SupplierDetail({ supplier }) {
                 </div>
 
                 <div>
-                  <span>Priority</span>
-                  <strong>{supplier.risk.intervention.priority}</strong>
-                </div>
-
-                <div>
                   <span>Reason</span>
                   <p>{supplier.risk.intervention.reason}</p>
                 </div>
               </div>
-            </div>
+
+              <p className="decision-note">
+                This is a rule-based intervention suggestion based on the
+                current financial-risk and supplier-dependency state.
+              </p>
+            </section>
           )}
-
-          <div>
-            <strong>Why:</strong>
-            <ul>
-              {supplier.risk.top_factors.map((f) => (
-                <li key={f}>{FACTOR_LABELS[f] || f}</li>
-              ))}
-            </ul>
-          </div>
-          {supplier.risk?.dependency && (
-            <div className="dependency-section">
-              <h3>Supplier dependency</h3>
-
-              <div className="dependency-summary">
-                <span className="dependency-level">
-                  {supplier.risk.dependency.level}
-                </span>
-
-                <span>
-                  {(supplier.risk.dependency.weight * 100).toFixed(0)}% dependency weight
-                </span>
-              </div>
-
-              <p>{supplier.risk.dependency.replaceability}</p>
-            </div>
-          )}
-        </div>
+        </>
       )}
 
-      <section className="scenario-workspace" aria-labelledby="scenario-title">
+      <section
+        className="scenario-workspace decision-section"
+        aria-labelledby="scenario-title"
+      >
         <div className="scenario-heading">
-          <h3 id="scenario-title">What-if simulation</h3>
+          <div>
+            <p className="eyebrow">04 · Scenario analysis</p>
+            <h3 id="scenario-title">What-if simulation</h3>
+          </div>
+
           <p>
-            Explore how a change in supplier payment behavior or dependency could affect the current risk model output. This is a simulated scenario, not a prediction of actual future outcomes.
+            Explore how a change in supplier payment behavior or dependency
+            could affect the current risk model output.
           </p>
+        </div>
+
+        <div className="scenario-disclaimer">
+          What-if simulation — not a prediction of actual future outcomes.
         </div>
 
         <form className="scenario-form" onSubmit={handleScenarioSubmit}>
@@ -234,7 +303,11 @@ export default function SupplierDetail({ supplier }) {
           </button>
         </form>
 
-        {scenarioError && <p className="scenario-error">{scenarioError}</p>}
+        {scenarioError && (
+          <p className="scenario-error" role="alert">
+            {scenarioError}
+          </p>
+        )}
 
         {scenarioResult && (
           <div className="scenario-result">
@@ -256,24 +329,38 @@ export default function SupplierDetail({ supplier }) {
         )}
       </section>
 
-      <h3>Revenue trend + next-period forecast</h3>
-      <ResponsiveContainer width="100%" height={260}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="period" />
-          <YAxis />
-          <Tooltip />
-          <Line type="monotone" dataKey="revenue" stroke="#1565c0" name="Actual revenue" connectNulls />
-          <Line
-            type="monotone"
-            dataKey="forecast"
-            stroke="#c62828"
-            strokeDasharray="5 5"
-            name="Forecast"
-            connectNulls
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <section className="revenue-section decision-section">
+        <div className="decision-section-heading">
+          <div>
+            <p className="eyebrow">05 · Financial trend</p>
+            <h3>Revenue trend + next-period forecast</h3>
+          </div>
+        </div>
+
+        <ResponsiveContainer width="100%" height={260}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="period" />
+            <YAxis />
+            <Tooltip />
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              stroke="#1565c0"
+              name="Actual revenue"
+              connectNulls
+            />
+            <Line
+              type="monotone"
+              dataKey="forecast"
+              stroke="#c62828"
+              strokeDasharray="5 5"
+              name="Forecast"
+              connectNulls
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </section>
     </div>
   );
 }
