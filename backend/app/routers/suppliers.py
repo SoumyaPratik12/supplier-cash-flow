@@ -1,6 +1,6 @@
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -11,11 +11,20 @@ from app.schemas import (
     InterventionDecision,
     RevenueSnapshotOut,
     RiskBreakdown,
+    ScenarioRequest,
+    ScenarioResponse,
+    ScenarioStateResponse,
     SupplierListItem,
     SupplierProfile,
 )
 from app.services.dependency import dependency_breakdown
 from app.services.intervention import intervention_for
+from app.services.scenario import (
+    DEPENDENCY_REDUCTION,
+    EARLY_PAYMENT,
+    simulate_scenario,
+)
+from app.services.scoring import extract_features
 
 router = APIRouter(prefix="/suppliers", tags=["suppliers"])
 
@@ -54,6 +63,101 @@ def list_suppliers(db: Session = Depends(get_db)):
         )
     items.sort(key=lambda i: i.score * i.dependency_weight, reverse=True)
     return items
+
+
+@router.post("/{supplier_id}/scenario", response_model=ScenarioResponse)
+def run_supplier_scenario(
+    supplier_id: int,
+    payload: ScenarioRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> ScenarioResponse:
+    supplier = db.query(Supplier).filter(Supplier.id == supplier_id).first()
+    if supplier is None:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    risk_model = getattr(request.app.state, "risk_model", None)
+    if risk_model is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Risk model is not available",
+        )
+
+    invoices = (
+        db.query(Invoice)
+        .filter(Invoice.supplier_id == supplier_id)
+        .all()
+    )
+    revenue_snapshots = (
+        db.query(RevenueSnapshot)
+        .filter(RevenueSnapshot.supplier_id == supplier_id)
+        .all()
+    )
+    invoice_data = [
+        {
+            "status": invoice.status.value,
+            "paid_date": invoice.paid_date,
+            "issue_date": invoice.issue_date,
+            "due_date": invoice.due_date,
+        }
+        for invoice in invoices
+    ]
+    features = extract_features(
+        invoice_data,
+        [snapshot.revenue for snapshot in revenue_snapshots],
+    )
+
+    if payload.scenario == "early_payment":
+        if payload.payment_days_reduction is None:
+            raise HTTPException(
+                status_code=422,
+                detail="payment_days_reduction is required for early_payment",
+            )
+        scenario_type = EARLY_PAYMENT
+        target_payment_days = (
+            features["avg_days_to_payment"] - payload.payment_days_reduction
+        )
+        target_dependency = None
+    elif payload.scenario == "reduce_dependency":
+        if payload.dependency_weight is None:
+            raise HTTPException(
+                status_code=422,
+                detail="dependency_weight is required for reduce_dependency",
+            )
+        scenario_type = DEPENDENCY_REDUCTION
+        target_payment_days = None
+        target_dependency = payload.dependency_weight
+    else:
+        raise HTTPException(
+            status_code=422,
+            detail="scenario must be one of: early_payment, reduce_dependency",
+        )
+
+    try:
+        result = simulate_scenario(
+            model=risk_model,
+            current_features=features,
+            current_dependency=supplier.dependency_weight,
+            scenario=scenario_type,
+            target_payment_days=target_payment_days,
+            target_dependency=target_dependency,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    def state_to_response(state) -> ScenarioStateResponse:
+        return ScenarioStateResponse(
+            risk_level=state.risk_level,
+            score=state.score,
+            dependency=dependency_breakdown(state.dependency),
+            intervention=InterventionDecision(**state.intervention),
+        )
+
+    return ScenarioResponse(
+        scenario=payload.scenario,
+        baseline=state_to_response(result.baseline),
+        simulated=state_to_response(result.simulated),
+    )
 
 
 @router.get("/{supplier_id}", response_model=SupplierProfile)

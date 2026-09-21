@@ -153,3 +153,142 @@ main {
   margin: 0;
   line-height: 1.5;
 }
+
+.scenario-workspace {
+  border-top: 1px solid #d9dee8;
+  margin-top: 24px;
+  padding-top: 20px;
+}
+
+.scenario-heading h3,
+.scenario-result-heading h4 {
+  margin: 0;
+}
+
+.scenario-heading p {
+  color: #596579;
+  line-height: 1.5;
+  margin: 8px 0 16px;
+}
+
+.scenario-form {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr 1fr auto;
+}
+
+.scenario-form label {
+  color: #4b5563;
+  display: grid;
+  font-size: 0.82rem;
+  font-weight: 600;
+  gap: 6px;
+}
+
+.scenario-form input,
+.scenario-form select {
+  background: white;
+  border: 1px solid #b9c2d0;
+  border-radius: 4px;
+  color: #1a1a1a;
+  font: inherit;
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.scenario-form button {
+  background: #1565c0;
+  border: 0;
+  border-radius: 4px;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  min-height: 38px;
+  padding: 8px 14px;
+}
+
+.scenario-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.scenario-error {
+  background: #fdecea;
+  color: #c62828;
+  margin: 12px 0 0;
+  padding: 10px 12px;
+}
+
+.scenario-result {
+  border-top: 1px solid #e5e7eb;
+  margin-top: 20px;
+  padding-top: 16px;
+}
+
+.scenario-result-heading {
+  align-items: baseline;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.scenario-result-heading span {
+  color: #596579;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.scenario-columns {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+}
+
+.scenario-columns > div {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 14px;
+}
+
+.scenario-columns h5 {
+  border-bottom: 1px solid #e5e7eb;
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+}
+
+.scenario-state {
+  display: grid;
+  gap: 11px;
+}
+
+.scenario-state > div {
+  display: grid;
+  gap: 3px;
+}
+
+.scenario-state span {
+  color: #596579;
+  font-size: 0.76rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.scenario-state strong {
+  line-height: 1.35;
+}
+
+.scenario-state p {
+  line-height: 1.45;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .scenario-form,
+  .scenario-columns {
+    grid-template-columns: 1fr;
+  }
+}

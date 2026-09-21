@@ -40,3 +40,22 @@ export const api = {
   getSupplier: (id) => get(`/suppliers/${id}`),
   getForecast: (id) => get(`/suppliers/${id}/forecast`),
 };
+
+export async function runSupplierScenario(supplierId, payload) {
+  const response = await fetch(
+    `${BASE_URL}/suppliers/${supplierId}/scenario`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Scenario request failed with ${response.status}`);
+  }
+
+  return response.json();
+}

@@ -5,6 +5,8 @@ synthetic ground truth, and persists risk scores + forecasts per supplier.
 This mirrors the "offline batch job" design from the kickoff doc — scoring
 is not computed live per request."""
 
+from pathlib import Path
+
 import json
 
 from app.database import Base, SessionLocal, engine
@@ -12,6 +14,7 @@ from app.models import Invoice, RevenueSnapshot, RiskScore, Supplier
 from app.services.data_generator import generate_suppliers
 from app.services.forecasting import forecast_next_period
 from app.services.risk_explanation import explain_risk
+from app.services.model_store import save_model
 from app.services.scoring import (
     extract_features,
     recommended_action,
@@ -42,6 +45,9 @@ def seed(n_suppliers: int = 50, seed_value: int = 42):
         labels.append(s["_ground_truth_label"])
 
     model = train_risk_model(feature_rows, labels)
+
+    model_path = Path(__file__).resolve().parent / "risk_model.joblib"
+    save_model(model, model_path)
     print(f"Trained risk model — 5-fold CV precision={model.cv_precision:.2f}, recall={model.cv_recall:.2f}")
 
     db = SessionLocal()

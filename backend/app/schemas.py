@@ -53,6 +53,25 @@ class InterventionDecision(BaseModel):
     reason: str
 
 
+class ScenarioRequest(BaseModel):
+    scenario: str
+    payment_days_reduction: Optional[float] = None
+    dependency_weight: Optional[float] = None
+
+
+class ScenarioStateResponse(BaseModel):
+    risk_level: str
+    score: float
+    dependency: DependencyBreakdown
+    intervention: InterventionDecision
+
+
+class ScenarioResponse(BaseModel):
+    scenario: str
+    baseline: ScenarioStateResponse
+    simulated: ScenarioStateResponse
+
+
 class RiskBreakdown(BaseModel):
     risk_level: str
     score: float
